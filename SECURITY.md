@@ -13,7 +13,7 @@ Below is the comprehensive map of the original dependencies shipped with OIS (v1
 
 | Component / Library | Original Version | Updated Version | Primary Function |
 | :--- | :--- | :--- | :--- |
-| **Game Executable** | 1.0.8 | 1.0.8+ (Patched) | Core Client |
+| **Game Executable** | 1.0.8 | 1.0.8 | Core Client |
 | **Cocos2d-x Engine** | 3.15.1 | 3.15.1 (Dependencies Updated) | Game Engine |
 | **OpenSSL** (`libcrypto` / `libssl`) | 1.1.0c | **1.1.1w** | Cryptography & TLS |
 | **cURL** (`libcurl.dll`) | 7.52.1 | **8.21.0** | HTTP / Network Transfers |
