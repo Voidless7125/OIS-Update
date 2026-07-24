@@ -1,0 +1,29 @@
+# Windows system files
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary and generated files
+*.tmp
+*.temp
+*.bak
+*.log
+*.zip
+*.7z
+*.rar
+
+# Editor/IDE files
+.vscode/
+.idea/
+
+# Local test/output folders
+temp_target/
+output/
+build/
+obj/
+bin/
+
+# Common game patch artifacts
+*.dll~
+*.exe~
+*.bak
