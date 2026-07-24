@@ -3,7 +3,7 @@ description: Report a crash, soft-lock, or logic bug in the decompiled Objects i
 title: "[Bug]: <Short, descriptive title>"
 labels: ["bug", "triage"]
 body:
-- type: markdown
+  - type: markdown
     attributes:
       value: |
         ### Welcome to the OIS-Decompile Bug Tracker!
