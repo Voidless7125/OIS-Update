@@ -3,12 +3,13 @@ description: Report a crash, soft-lock, or logic bug in the decompiled Objects i
 title: "[Bug]: <Short, descriptive title>"
 labels: ["bug", "triage"]
 body:
-  - type: markdown
+- type: markdown
     attributes:
       value: |
         ### Welcome to the OIS-Decompile Bug Tracker!
         Thank you for contributing to the Objects in Space community recompile project. 
-        Every detailed report provides the breadcrumbs needed to track down faulty logic, reverse-engineering quirks, and legacy crashes in the code.
+        
+        **Prefer Email?** If you don't want to use GitHub, you can send your detailed reports and crash logs directly to **fuzziestdvt@duck.com**.
         
         *(Disclaimer: This is an unofficial community project maintained in spare time, not affiliated with the original developers.)*
 
