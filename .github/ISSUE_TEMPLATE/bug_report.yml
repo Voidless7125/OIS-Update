@@ -1,0 +1,68 @@
+name: Bug Report (OIS-Decompile)
+description: Report a crash, soft-lock, or logic bug in the decompiled Objects in Space client.
+title: "[Bug]: <Short, descriptive title>"
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Welcome to the OIS-Decompile Bug Tracker!
+        Thank you for contributing to the Objects in Space community recompile project. 
+        Every detailed report provides the breadcrumbs needed to track down faulty logic, reverse-engineering quirks, and legacy crashes in the code.
+        
+        *(Disclaimer: This is an unofficial community project maintained in spare time, not affiliated with the original developers.)*
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 🐛 The Bug
+      description: What exactly went wrong? Describe the expected behavior versus the actual behavior (e.g., passing origin/destination data backward).
+      placeholder: When attempting to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 🔄 Steps to Reproduce
+      description: Step-by-step instructions on how to trigger the bug. The more specific you are, the faster the faulty code block can be isolated.
+      placeholder: |
+        1. Launch the game and load a save.
+        2. Open the engineering panel.
+        3. Attempt to move component X to slot Y using a touch screen.
+        4. Observe the crash/behavior.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 🖥️ Hardware & Environment Setup
+      description: What is your input method (mouse, touch screen, HOTAS, controller)? Are you running any existing mods?
+      placeholder: e.g., Windows 10, Touch Screen monitor, no mods.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📄 Crash Logs & Debug Output
+      description: |
+        **CRITICAL FOR FIXES:** Please drag and drop your log files directly into this box. 
+        
+        Locate the following files in `C:\Program Files (x86)\Steam\steamapps\common\Objects in Space\ObjectsInSpace`:
+        - `DebugLog_Game.txt`
+        - `crash_YYYY-MM-DD_HH-MM-SS.txt` (The date/time will match your crash)
+      placeholder: Drag and drop your .txt files here...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: ✅ Acknowledgements
+      options:
+        - label: I have searched the existing issues to ensure this bug has not already been reported.
+          required: true
+        - label: I understand that fixes are done line-by-line and I can review all code changes transparently once a patch is ready.
+          required: true
