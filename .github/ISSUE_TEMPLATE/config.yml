@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Direct Email Bug Reports
+    url: mailto:fuzziestdvt@duck.com
+    about: If you prefer not to use GitHub, you can email your bug reports and crash logs directly here.
