@@ -21,7 +21,7 @@ Below is the comprehensive map of the original dependencies shipped with OIS (v1
 | **zlib** (`zlib1.dll`) | 1.2.5 | **1.3.2** | Data Compression |
 | **libwebsockets*** | 2.1.0 | **2.4.2** | Real-time Server Networking |
 | **libtiff** | 4.0.3 | **4.7.2** | Image Parsing |
-| **FMOD Studio** (`fmod.dll`) | 1.04 | **2.0.1.xx** | Audio Engine |
+| **FMOD Studio** (`fmod.dll`) | 1.04 | **2.0.1.23** | Audio Engine |
 | **OpenAL** (`OpenAL32.dll`) | 1.16.0 | **1.25.2** | Spatial Audio |
 | **libmpg123** | 1.20.1 | **1.33.6** | MP3 Decoding |
 | **libvorbis** | 1.3.4 | **1.3.7** | OGG Audio Decoding |
