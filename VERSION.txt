@@ -1,0 +1,7 @@
+2026.07.31.2
+
+Updated from OpenSSL 1.1.1w to 1.1.1zh
+Improved batch file
+Added versioning
+Fix Websockets.dll from being flagged
+Fix DLL's being marked from the internet.
