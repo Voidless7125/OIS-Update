@@ -17,11 +17,11 @@ Below is the comprehensive map of the original dependencies shipped with OIS (v1
 | **Cocos2d-x Engine** | 3.15.1 | 3.15.1 (Dependencies Updated) | Game Engine |
 | **OpenSSL** (`libcrypto` / `libssl`)* | 1.1.0c | **1.1.1w** | Cryptography & TLS |
 | **cURL** (`libcurl.dll`) | 7.52.1 | **8.21.0** | HTTP / Network Transfers |
-| **SQLite** (`sqlite3.dll`) | 3.7.15.1 | **3.53.4* | Local Database Storage |
+| **SQLite** (`sqlite3.dll`) | 3.7.15.1 | *3.53.4* | Local Database Storage |
 | **zlib** (`zlib1.dll`) | 1.2.5 | **1.3.2** | Data Compression |
 | **libwebsockets*** | 2.1.0 | **2.4.2** | Real-time Server Networking |
 | **libtiff** | 4.0.3 | **4.7.2** | Image Parsing |
-| **FMOD Studio** (`fmod.dll`) | 1.04 | **2.0.1.23** | Audio Engine |
+| **FMOD Studio*** (`fmod.dll`) | 1.04 | **2.0.1.23** | Audio Engine |
 | **OpenAL** (`OpenAL32.dll`) | 1.16.0 | **1.25.2** | Spatial Audio |
 | **libmpg123** | 1.20.1 | **1.33.6** | MP3 Decoding |
 | **libvorbis** | 1.3.4 | **1.3.7** | OGG Audio Decoding |
