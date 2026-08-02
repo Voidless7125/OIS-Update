@@ -1,7 +1,4 @@
-2026.08.02.1
+2026.08.02.2
 
-OpenSSL Updated.
-Improved batch file
-Added versioning
-Fix Websockets.dll from being flagged
-Fix DLL's being marked from the internet.
+Remove iconv.dll
+Update libmpg123.dll and ogg.dll
