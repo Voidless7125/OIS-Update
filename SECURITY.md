@@ -23,7 +23,7 @@ Below is the comprehensive map of the original dependencies shipped with OIS (v1
 | **libtiff** | 4.0.3 | **4.7.2** | Image Parsing |
 | **FMOD Studio*** (`fmod.dll`) | 1.04 | **2.0.1.23** | Audio Engine |
 | **OpenAL** (`OpenAL32.dll`) | 1.16.0 | **1.25.2** | Spatial Audio |
-| **libmpg123** | 1.20.1 | **1.33.6** | MP3 Decoding |
+| **libmpg123** | 1.20.1 | **1.33.67* | MP3 Decoding |
 | **libvorbis** | 1.3.4 | **1.3.7** | OGG Audio Decoding |
 
 *\*Note: While these libraries have been upgraded to the highest stable versions compatible with the legacy engine architecture, some residual risks remain, which are mitigated at the network layer via firewall rules.*
@@ -100,7 +100,7 @@ Using **Properties → Installed Files → Verify integrity of game files** in S
 
 **If you verify your files, click the "Repair Objects in Space Patch" shortcut afterwards.** The installer offers to create it on your Desktop and Start Menu. It compares every file in your game folder against `OIS_Update.manifest.txt` and puts back anything Steam reverted, prompting for Administrator rights only if your game lives somewhere your account cannot write.
 
-The shortcut points at a copy of the package under `%LOCALAPPDATA%\OIS-Update`, so it keeps working after you delete the folder you extracted the patch into. It never goes online. Remove it with `OIS_Health_Check.bat -remove-shortcut`.
+The shortcut points at a copy of the package under `%LOCALAPPDATA%\OIS-Update`, so it keeps working after you delete the folder you extracted the patch into. The health check stays offline unless you choose its full-installer prompt; that installer then offers a separate yes/no online update check. Remove the shortcut with `OIS_Health_Check.bat -remove-shortcut`.
 
 Running `Patch_OIS.bat` again does the same job, and is what you want if you also need to pick up a newer patch version.
 

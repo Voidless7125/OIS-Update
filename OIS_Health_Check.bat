@@ -27,9 +27,8 @@ rem  Reads OIS_Update.manifest.txt from the game folder and compares the
 rem  SHA256 of every listed file. Detects Steam "Verify integrity of game
 rem  files", which silently restores the vanilla DLLs.
 rem
-rem  This script NEVER touches the network. It repairs only from the local
-rem  package folder. Downloading is Patch_OIS.bat's job and stays under
-rem  human control.
+rem  The interactive checker can hand off to Patch_OIS.bat, which offers an
+rem  online update check and then repairs the full install from the package.
 rem =====================================================================
 
 set "SCRIPT_DIR=%~dp0"
@@ -74,6 +73,9 @@ if not exist "%GAME_MANIFEST%" (
     if "%QUIET%"=="0" pause
     exit /b 1
 )
+
+call :OfferPatchInstall
+if errorlevel 2 exit /b 0
 
 call :MaybeElevate
 
@@ -147,6 +149,29 @@ if "%QUIET%"=="0" (
     pause
 )
 exit /b 0
+
+
+rem --------------------------------------------------------- update/install
+:OfferPatchInstall
+if "%QUIET%"=="1" exit /b 0
+if not exist "%SCRIPT_DIR%\Patch_OIS.bat" exit /b 0
+echo.
+choice /C YN /M "Run the full patch installer now? It will offer an online update check and repair the install"
+if errorlevel 2 exit /b 0
+echo.
+call "%SCRIPT_DIR%\Patch_OIS.bat" "%TARGET_DIR%"
+if errorlevel 1 (
+    echo.
+    echo [WARNING] The update or repair did not complete.
+    echo Continuing with the local health check.
+    echo.
+    exit /b 0
+)
+echo.
+echo The full patch installer completed. Health check finished.
+echo.
+pause
+exit /b 2
 
 
 rem ---------------------------------------------------------------------
@@ -314,6 +339,7 @@ if not exist "%USER_ROOT%" (
 copy /Y "%SCRIPT_DIR%\*.dll" "%USER_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\manifest.txt" "%USER_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\VERSION.txt" "%USER_ROOT%\" >nul 2>&1
+copy /Y "%SCRIPT_DIR%\Patch_OIS.bat" "%USER_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\OIS_Health_Check.bat" "%USER_ROOT%\" >nul 2>&1
 
 set "SHORTCUT_TARGET=%USER_ROOT%\OIS_Health_Check.bat"
@@ -338,7 +364,8 @@ echo Created "Repair Objects in Space Patch" on your Desktop and Start Menu.
 echo.
 echo If Steam ever verifies your game files and the patch stops applying,
 echo click that shortcut. It re-checks every file and puts back anything
-echo Steam reverted. It never goes online.
+echo Steam reverted. It stays offline unless you choose the full installer
+echo and its online update check.
 echo.
 echo Remove it later with:  OIS_Health_Check.bat -remove-shortcut
 echo.
@@ -390,6 +417,7 @@ if not exist "%INSTALL_ROOT%" md "%INSTALL_ROOT%" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\*.dll" "%INSTALL_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\manifest.txt" "%INSTALL_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\VERSION.txt" "%INSTALL_ROOT%\" >nul 2>&1
+copy /Y "%SCRIPT_DIR%\Patch_OIS.bat" "%INSTALL_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\OIS_Health_Check.bat" "%INSTALL_ROOT%\" >nul 2>&1
 
 set "TASK_CMD=%INSTALL_ROOT%\OIS_Health_Check.bat"

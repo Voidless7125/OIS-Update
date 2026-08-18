@@ -1,6 +1,6 @@
 # OIS Community Patch manifest
-# Version=2026.08.18.1
-# Generated=Tue 08/18/2026 18:39:56.53
+# Version=2026.08.18.3
+# Generated=Tue 08/18/2026 19:51:33.18
 # Format: <scope> <sha256> <filename>
 #   game = copied into the game folder
 #   tool = package only (scripts and docs)
@@ -16,7 +16,7 @@ game 15c0de151dd998a3568a110994a6e79ee0f7465b0baaf8a6b0a9e6d3205339af libgcc_s_d
 game 35dad9e0743c383b637324d9cdf5d410e05c30648f57fb49007d1f7649bac199 libiconv-2.dll
 game b4faef127a8522355943ddb949763e239ce0ef8ece830bf49c671095f1e2321f libidn2-0.dll
 game c2e16d4306d5ab533a95846817f278495ad97f1d87b2b31b90802c418c7fa17f libintl-8.dll
-game a141eced2e6515990b0426cb683aaf898d371caadbe36e2722a27ad61682bc28 libmpg123.dll
+game 4ebacc5bc5ccfb1c2c6d3219440cdcbf0c7c12b98308d28242e5db9b92a22470 libmpg123.dll
 game 1e689b0edfe878bb7613bf16edbe17d01be8362758c3ee167c084d3bb2f27c5b libnghttp2-14.dll
 game f59dd714fb77a0bd842633657d81f9a87f174ef2214a685bd0a91b3c2acdfed7 libpsl-5.dll
 game 92ee150ccd8705ec82ff57cf9d4829c221f9b69677fd5004a33006a550807c7a libssl-1_1.dll
@@ -33,8 +33,8 @@ game 1c2fcfa7632b6025829e3539142f1b7ebdbc5bb44d4fd6cc0f42f83715d2eb9f sqlite3.dl
 game 18009be7ec710f5ecb18264ec3ec056ba4e7f3da4a894d9a6ac359da54f626b8 websockets.dll
 game eadacd475157bc9c38a52804876b09fd473861ce400a20b56ce840c53529c3e0 zlib1.dll
 tool f825579b0a4d0115972f2734152f2fe958c47485a7885651e8607627341dcfcf Patch_OIS.bat
-tool fafb5a27ab2d843a2da484de352ebd8f79cd2478304a77c8eafdb538349f2e96 OIS_Health_Check.bat
+tool d2a55ff06cb9d3969547a2372a497d137c135ed2fd8d490b8f97795e550f1fee OIS_Health_Check.bat
 tool ff35ad08d2f233f641d1571c1009f1ca48c4016a60f9dbdb7ec37a73f9a7b16b Make_Manifest.bat
-tool 6a9ef642af6bb5c1fc44962ca8d786a2accde3710c283578ed47893afdd56f2d VERSION.txt
-tool 15f5d033e13f2f3773881b121b9919c0af28d0df5767646c473bac439bcd93d4 SECURITY.md
+tool fe52f5666207e71b7fa077f29e88be5747721373df5a91e128ce8b0ef9ecb230 VERSION.txt
+tool 455485059b70ba0cb25cae81ab56308059e5e2c711ccc9bfee4f9f0620125496 SECURITY.md
 tool 209b2c085fe5b48377e71252eca67a602c46a837961577ac1549cedca11309c5 README.md
