@@ -1,4 +1,62 @@
-2026.08.02.2
-
-Remove iconv.dll
-Update libmpg123.dll and ogg.dll
+2026.08.18.1
+# ---------------------------------------------------------------------
+#  Line 1 above is the version string. It is parsed by Patch_OIS.bat and
+#  compared against the copy on GitHub, so it must stay on its own on the
+#  first line, in YYYY.MM.DD.N form, with no leading spaces.
+#
+#  Everything below line 1 is printed to the user when the patch runs.
+#  Lines starting with # are maintainer notes and are never shown.
+#
+#  Keep to plain ASCII. Box-drawing characters render as garbage in the
+#  console because the code page is almost never UTF-8.
+#  Do not use  >  <  |  or  ^  in visible lines.
+# ---------------------------------------------------------------------
+===============================================================
+    OBJECTS IN SPACE          C O M M U N I T Y   P A T C H
+    Release 2026.08.18.1                     18 August 2026
+===============================================================
+    Modernises the 2018 dependency chain shipped with OIS 1.0.8.
+    28 libraries, verified by SHA256, installed in one pass.
+---------------------------------------------------------------
+  ADDED
+    +   manifest.txt - every file is checksummed before and
+        after install, so a half-extracted package cannot
+        silently produce a broken game
+    +   Incremental updates - only the files that actually
+        changed are downloaded, typically under 300 KB
+    +   OIS_Health_Check.bat - one click puts the patch back
+        after Steam verifies your game files
+    +   Make_Manifest.bat - regenerates checksums after edits
+  CHANGED
+    ~   The installer no longer carries a hardcoded file list.
+        Adding or dropping a DLL is now a manifest edit only.
+    ~   Downloads use curl.exe where available. The old method
+        pulled the entire repository archive every time.
+    ~   Firewall rules are written through a temporary script
+        instead of a four-layer quoted command chain.
+  REMOVED
+    -   steam_api.dll   Valve SDK binary. Not ours to ship, and
+                        a frequent antivirus false positive.
+    -   iconv.dll       Superseded by libiconv-2.dll. Where a
+                        stock copy exists it is restored, not
+                        deleted.
+  FIXED
+    !   Dropping a DLL from the package no longer makes the
+        installer refuse to run
+    !   Folder paths containing round brackets now work, such
+        as an "OIS-Update-dev (1)" second download
+    !   Pasted game folder paths keep working when wrapped in
+        quotes or ending in a backslash
+    !   Steam libraries on other drives are detected via
+        libraryfolders.vdf
+---------------------------------------------------------------
+  LIBRARY VERSIONS IN THIS RELEASE
+    OpenSSL   1.1.1zh      cURL       8.21.0     SQLite  3.53.4
+    zlib      1.3.2        libtiff    4.7.2      vorbis  1.3.7
+    mpg123    1.33.6       OpenAL     1.25.2     FMOD    2.0.1.23
+    libwebsockets 2.4.2 - newest build that stays ABI compatible.
+    Residual risk is contained by the optional firewall rules.
+===============================================================
+  Full details in SECURITY.md. Install notes in INSTALL.md.
+  Report problems on the Steam discussion thread.
+===============================================================

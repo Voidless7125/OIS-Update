@@ -5,8 +5,14 @@ title Objects in Space - Community Patch
 rem =====================================================================
 rem  Objects in Space: Community Patch Setup
 rem
-rem  Everything is driven by manifest.txt (see Make_Manifest.bat).
-rem  Updates download only the files whose SHA256 changed, not the repo.
+rem  Optional argument: -debug       shows per-file compare details
+rem  Optional argument: -uninstall   restores pre-patch files from Backup\
+rem
+rem  MAINTAINER NOTE: this file MUST be saved with Windows (CRLF) line
+rem  endings. Batch label lookup is unreliable in LF-only files. Add this
+rem  to .gitattributes so GitHub never converts it:
+rem      *.bat text eol=crlf
+rem      *.cmd text eol=crlf
 rem =====================================================================
 
 set "REPO_OWNER=Voidless7125"
@@ -27,15 +33,16 @@ set "DEBUG_MODE=0"
 set "TARGET_OVERRIDE="
 set "PAYLOAD_LIST="
 set "PAYLOAD_COUNT=0"
+set "UNINSTALL_MODE=0"
 set "HAVE_CURL=0"
 where curl.exe >nul 2>&1 && set "HAVE_CURL=1"
 
-rem A pending self-update is applied before anything else.
 if exist "%SCRIPT_DIR%\Patch_OIS.bat.new" goto :SelfUpdateSwap
 
-call :PrintHeader
 call :ParseArgs %* || goto :Fail
 call :LoadPatchVersion
+if "%UNINSTALL_MODE%"=="1" goto :DoUninstall
+call :ShowChangelog
 call :OfferUpdateCheck
 if errorlevel 2 goto :SelfUpdateSwap
 call :BuildPayload || goto :Fail
@@ -48,30 +55,19 @@ call :VerifyRuntimeFiles || goto :Fail
 call :CompareAgainstOriginal
 call :WriteInstallMarker || goto :Fail
 call :OfferFirewall
-call :OfferHealthTask
+call :OfferRepairShortcut
 call :Finish
 exit /b 0
 
 
 rem ---------------------------------------------------------------- UI
-:PrintHeader
-echo ===================================================
-echo   Objects in Space: Community Patch Setup
-echo ===================================================
-echo.
-echo Validates every patch file by SHA256, updates the game,
-echo and records an integrity manifest in the game folder.
-echo.
-echo Optional argument: -debug  ^(shows per-file compare details^)
-echo.
-exit /b 0
-
-
 :ParseArgs
 if "%~1"=="" exit /b 0
 if /I "%~1"=="-debug"  ( set "DEBUG_MODE=1" & shift & goto :ParseArgs )
 if /I "%~1"=="--debug" ( set "DEBUG_MODE=1" & shift & goto :ParseArgs )
 if /I "%~1"=="/debug"  ( set "DEBUG_MODE=1" & shift & goto :ParseArgs )
+if /I "%~1"=="-uninstall"  ( set "UNINSTALL_MODE=1" & shift & goto :ParseArgs )
+if /I "%~1"=="--uninstall" ( set "UNINSTALL_MODE=1" & shift & goto :ParseArgs )
 if defined TARGET_OVERRIDE (
     echo [ERROR] Only one target game folder path can be provided.
     echo.
@@ -91,7 +87,22 @@ if exist "%SCRIPT_DIR%\VERSION.txt" (
 )
 if not defined PATCH_VERSION set "PATCH_VERSION=unknown"
 call :NormalizeVersion PATCH_VERSION
-echo Patch package version: %PATCH_VERSION%
+exit /b 0
+
+
+rem Renders everything after line 1 of VERSION.txt. Lines beginning with #
+rem are maintainer notes and stay hidden. FOR-variable expansion happens
+rem after the parser has finished, so ^&, ^| and brackets inside the
+rem changelog text are printed literally and cannot break anything.
+:ShowChangelog
+if not exist "%SCRIPT_DIR%\VERSION.txt" (
+    echo   Objects in Space: Community Patch Setup
+    echo   Patch package version: %PATCH_VERSION%
+    echo.
+    exit /b 0
+)
+echo.
+for /f "usebackq skip=1 eol=# tokens=* delims=" %%L in ("%SCRIPT_DIR%\VERSION.txt") do echo  %%L
 echo.
 exit /b 0
 
@@ -160,6 +171,9 @@ exit /b 0
 
 
 rem ------------------------------------------------------ target folder
+rem Nothing here exits or jumps out of a FOR body. Loops guard themselves
+rem with "if not defined TARGET_DIR", which is evaluated at run time, so
+rem the parser's file position is never disturbed mid-loop.
 :DetectTarget
 set "TARGET_DIR="
 if not "%~1"=="" (
@@ -184,16 +198,16 @@ if defined OIS_TARGET_DIR (
 )
 
 for %%I in ("%ProgramFiles(x86)%\Steam" "%ProgramFiles%\Steam" "%USERPROFILE%\Steam" "%SystemDrive%\Steam") do (
-    call :ScanSteamRoot "%%~I"
-    if not errorlevel 1 exit /b 0
+    if not defined TARGET_DIR call :ScanSteamRoot "%%~I"
 )
+if defined TARGET_DIR exit /b 0
 
 for %%K in ("HKCU\Software\Valve\Steam" "HKLM\SOFTWARE\WOW6432Node\Valve\Steam" "HKLM\SOFTWARE\Valve\Steam") do (
     for /f "tokens=2,*" %%A in ('reg query "%%~K" /v InstallPath 2^>nul ^| findstr /R /C:"InstallPath"') do (
-        call :ScanSteamRoot "%%~B"
-        if not errorlevel 1 exit /b 0
+        if not defined TARGET_DIR call :ScanSteamRoot "%%~B"
     )
 )
+if defined TARGET_DIR exit /b 0
 
 echo [NOTICE] Could not automatically find the game folder.
 echo.
@@ -221,22 +235,26 @@ exit /b 1
 
 
 :ScanSteamRoot
-set "STEAM_ROOT=%~1"
-call :IsValidGameDir "%STEAM_ROOT%\steamapps\common\Objects in Space" >nul 2>&1
-if not errorlevel 1 (
-    set "TARGET_DIR=%STEAM_ROOT%\steamapps\common\Objects in Space"
+if exist "%~1\steamapps\common\Objects in Space\ois.exe" (
+    set "TARGET_DIR=%~1\steamapps\common\Objects in Space"
     exit /b 0
 )
-if not exist "%STEAM_ROOT%\steamapps\libraryfolders.vdf" exit /b 1
-for /f "usebackq tokens=2 delims=	 " %%P in (`findstr /I /C:"\"path\"" "%STEAM_ROOT%\steamapps\libraryfolders.vdf"`) do (
-    call :TrySteamLibrary %%P
-    if not errorlevel 1 exit /b 0
+if exist "%~1\steamapps\common\Objects in Space\ois_server.exe" (
+    set "TARGET_DIR=%~1\steamapps\common\Objects in Space"
+    exit /b 0
 )
+if not exist "%~1\steamapps\libraryfolders.vdf" exit /b 1
+for /f "usebackq tokens=2 delims=	 " %%P in (`findstr /I /C:"\"path\"" "%~1\steamapps\libraryfolders.vdf"`) do (
+    if not defined TARGET_DIR call :TryLibrary %%P
+)
+if defined TARGET_DIR exit /b 0
 exit /b 1
 
-:TrySteamLibrary
+:TryLibrary
 set "LIB=%~1"
 if not defined LIB exit /b 1
+rem libraryfolders.vdf escapes backslashes, so D:\\SteamLibrary comes back doubled.
+set "LIB=%LIB:\\=\%"
 call :IsValidGameDir "%LIB%\steamapps\common\Objects in Space" >nul 2>&1
 if errorlevel 1 exit /b 1
 set "TARGET_DIR=%LIB%\steamapps\common\Objects in Space"
@@ -249,14 +267,14 @@ exit /b 1
 
 
 :ShowInstalledVersion
-if exist "%TARGET_DIR%\OIS_Update.version.txt" (
-    echo Existing patch marker found in game folder:
-    for /f "usebackq delims=" %%L in ("%TARGET_DIR%\OIS_Update.version.txt") do echo   %%L
-    echo.
-) else (
+if not exist "%TARGET_DIR%\OIS_Update.version.txt" (
     echo No existing patch marker found in game folder.
     echo.
+    exit /b 0
 )
+echo Existing patch marker found in game folder:
+for /f "usebackq delims=" %%L in ("%TARGET_DIR%\OIS_Update.version.txt") do echo   %%L
+echo.
 exit /b 0
 
 :ConfirmTarget
@@ -322,11 +340,6 @@ set /a COPIED_COUNT+=1
 exit /b 0
 
 
-rem Files this patch used to install but no longer ships. Default action is
-rem to put the stock file back from Original\ so the game returns to vanilla
-rem for that DLL. Outright deletion only happens for names listed in
-rem obsolete.txt, because "we stopped shipping it" and "the game must not
-rem have it" are different statements.
 :RestoreDelisted
 if not exist "%TARGET_DIR%\%GAME_MANIFEST_NAME%" exit /b 0
 for /f "usebackq eol=# tokens=1,* delims= " %%A in ("%TARGET_DIR%\%GAME_MANIFEST_NAME%") do call :CheckDelisted "%%~B"
@@ -442,36 +455,37 @@ if "%DEBUG_MODE%"=="1" echo       SAME: %CMPNAME%
 exit /b 0
 
 
-rem The game folder gets its own manifest so OIS_Health_Check.bat can detect
-rem a Steam "verify integrity" rollback without needing the package.
+rem Written line by line rather than as one ( ... ) ^> file block. A block
+rem is parsed as a single command, so an unquoted path containing round
+rem brackets - "OIS-Update-dev (1)" from a second browser download, or
+rem anything under Program Files (x86) - closes the block early and throws
+rem "was unexpected at this time". Sequential redirects have no such issue.
 :WriteInstallMarker
 echo [4/5] Writing patch marker and game-folder manifest...
-(
-    echo OIS Community Patch
-    echo Version=%PATCH_VERSION%
-    echo Files=%PAYLOAD_COUNT%
-    echo Installed=%DATE% %TIME%
-    echo Source=%SCRIPT_DIR%
-    echo Script=Patch_OIS.bat
-) > "%TARGET_DIR%\OIS_Update.version.txt"
+set "MARKER=%TARGET_DIR%\OIS_Update.version.txt"
+> "%MARKER%" echo OIS Community Patch
 if errorlevel 1 (
     echo [ERROR] Could not write version marker to game folder.
     echo.
     pause
     exit /b 1
 )
+>>"%MARKER%" echo Version=%PATCH_VERSION%
+>>"%MARKER%" echo Files=%PAYLOAD_COUNT%
+>>"%MARKER%" echo Installed=%DATE% %TIME%
+>>"%MARKER%" echo Source=%SCRIPT_DIR%
+>>"%MARKER%" echo Script=Patch_OIS.bat
 
-(
-    echo # OIS Community Patch installed manifest
-    echo # Version=%PATCH_VERSION%
-    echo # Installed=%DATE% %TIME%
-    echo # Package=%SCRIPT_DIR%
-    echo # Format: ^<sha256^> ^<filename^>
-) > "%TARGET_DIR%\%GAME_MANIFEST_NAME%"
+set "GM=%TARGET_DIR%\%GAME_MANIFEST_NAME%"
+> "%GM%" echo # OIS Community Patch installed manifest
+>>"%GM%" echo # Version=%PATCH_VERSION%
+>>"%GM%" echo # Installed=%DATE% %TIME%
+>>"%GM%" echo # Package=%SCRIPT_DIR%
+>>"%GM%" echo # Format: ^<sha256^> ^<filename^>
 for /f "usebackq eol=# tokens=1,2,* delims= " %%A in ("%MANIFEST%") do (
-    if /I "%%~A"=="game" >> "%TARGET_DIR%\%GAME_MANIFEST_NAME%" echo %%~B %%~C
+    if /I "%%~A"=="game" >>"%GM%" echo %%~B %%~C
 )
-echo       Wrote: "%TARGET_DIR%\%GAME_MANIFEST_NAME%"
+echo       Wrote: "%GM%"
 echo.
 exit /b 0
 
@@ -500,19 +514,18 @@ echo.
 exit /b 0
 
 :ApplyFirewall
-set "FW_SCRIPT=%TEMP%\ois_firewall_%RANDOM%.cmd"
-(
-    echo @echo off
-    echo netsh advfirewall firewall delete rule name="OIS_Client_Block_Inbound" ^>nul 2^>^&1
-    echo netsh advfirewall firewall delete rule name="OIS_Server_Block_Inbound" ^>nul 2^>^&1
-    echo netsh advfirewall firewall add rule name="OIS_Client_Block_Inbound" description="Community Patch: blocks inbound connections to secure legacy libwebsockets." dir=in action=block program="%TARGET_DIR%\ois.exe" enable=yes profile=any edge=no ^>nul
-    echo netsh advfirewall firewall add rule name="OIS_Server_Block_Inbound" description="Community Patch: blocks inbound connections to secure legacy libwebsockets." dir=in action=block program="%TARGET_DIR%\ois_server.exe" enable=yes profile=any edge=no ^>nul
-    echo exit /b 0
-) > "%FW_SCRIPT%"
+set "FW=%TEMP%\ois_firewall_%RANDOM%.cmd"
+set "FWDESC=Community Patch: blocks inbound connections to secure legacy libwebsockets."
+> "%FW%" echo @echo off
+>>"%FW%" echo netsh advfirewall firewall delete rule name="OIS_Client_Block_Inbound" ^>nul 2^>^&1
+>>"%FW%" echo netsh advfirewall firewall delete rule name="OIS_Server_Block_Inbound" ^>nul 2^>^&1
+>>"%FW%" echo netsh advfirewall firewall add rule name="OIS_Client_Block_Inbound" description="%FWDESC%" dir=in action=block program="%TARGET_DIR%\ois.exe" enable=yes profile=any edge=no ^>nul
+>>"%FW%" echo netsh advfirewall firewall add rule name="OIS_Server_Block_Inbound" description="%FWDESC%" dir=in action=block program="%TARGET_DIR%\ois_server.exe" enable=yes profile=any edge=no ^>nul
+>>"%FW%" echo exit /b 0
 echo.
 echo Windows may show an Administrator permission prompt.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Start-Process -FilePath '%FW_SCRIPT%' -Verb RunAs -Wait -WindowStyle Hidden" >nul 2>&1
-del /F /Q "%FW_SCRIPT%" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Start-Process -FilePath '%FW%' -Verb RunAs -Wait -WindowStyle Hidden" >nul 2>&1
+del /F /Q "%FW%" >nul 2>&1
 netsh advfirewall firewall show rule name="OIS_Client_Block_Inbound" >nul 2>&1
 if errorlevel 1 exit /b 1
 netsh advfirewall firewall show rule name="OIS_Server_Block_Inbound" >nul 2>&1
@@ -520,28 +533,26 @@ if errorlevel 1 exit /b 1
 exit /b 0
 
 
-:OfferHealthTask
+:OfferRepairShortcut
 if not exist "%SCRIPT_DIR%\OIS_Health_Check.bat" exit /b 0
-echo Optional: schedule an integrity check.
-echo Steam's "Verify integrity of game files" silently reverts this patch.
-echo A scheduled check can detect that and re-apply it from a local copy.
+echo Optional: repair shortcut
+echo Steam's "Verify integrity of game files" will silently undo this patch.
+echo A shortcut lets you put it back in one click if that ever happens.
 echo.
-choice /C YN /M "Set up the scheduled integrity check now?"
+choice /C YN /M "Create a 'Repair Objects in Space Patch' shortcut?"
 if errorlevel 2 (
     echo.
-    echo Skipped. You can run OIS_Health_Check.bat -install-task later.
+    echo Skipped. You can create it later with:
+    echo   OIS_Health_Check.bat -install-shortcut
     echo.
     exit /b 0
 )
-call "%SCRIPT_DIR%\OIS_Health_Check.bat" -install-task "%TARGET_DIR%"
+call "%SCRIPT_DIR%\OIS_Health_Check.bat" -install-shortcut "%TARGET_DIR%"
 echo.
 exit /b 0
 
 
 rem -------------------------------------------------- incremental update
-rem Downloads VERSION.txt, then manifest.txt, then ONLY the files whose
-rem hash differs. A typical two-DLL update moves a few hundred KB instead
-rem of the whole branch archive.
 :OfferUpdateCheck
 choice /C YN /M "Check online for a newer patch package?"
 if errorlevel 2 (
@@ -610,7 +621,6 @@ if %SYNC_FAIL% GTR 0 (
     exit /b 0
 )
 
-rem Retire local files the new manifest no longer lists.
 if not exist "%RETIRED_DIR%" md "%RETIRED_DIR%" >nul 2>&1
 for %%F in ("%SCRIPT_DIR%\*.dll") do call :RetireIfDropped "%%~nxF"
 
@@ -639,7 +649,6 @@ if exist "%SCRIPT_DIR%\%~1" (
         exit /b 0
     )
 )
-rem The running script cannot overwrite itself; stage it instead.
 set "SYNC_DEST=%SCRIPT_DIR%\%~1"
 if /I "%~1"=="Patch_OIS.bat" set "SYNC_DEST=%SCRIPT_DIR%\Patch_OIS.bat.new"
 echo   downloading %~1 ...
@@ -680,13 +689,11 @@ if not exist "%SCRIPT_DIR%\Patch_OIS.bat.new" (
     exit /b 0
 )
 set "SWAP=%TEMP%\ois_swap_%RANDOM%.cmd"
-(
-    echo @echo off
-    echo ping -n 3 127.0.0.1 ^>nul
-    echo move /Y "%SCRIPT_DIR%\Patch_OIS.bat.new" "%SCRIPT_DIR%\Patch_OIS.bat" ^>nul
-    echo start "Objects in Space - Community Patch" /D "%SCRIPT_DIR%" "%SCRIPT_DIR%\Patch_OIS.bat"
-    echo del /F /Q "%%~f0"
-) > "%SWAP%"
+> "%SWAP%" echo @echo off
+>>"%SWAP%" echo ping -n 3 127.0.0.1 ^>nul
+>>"%SWAP%" echo move /Y "%SCRIPT_DIR%\Patch_OIS.bat.new" "%SCRIPT_DIR%\Patch_OIS.bat" ^>nul
+>>"%SWAP%" echo start "Objects in Space - Community Patch" /D "%SCRIPT_DIR%" "%SCRIPT_DIR%\Patch_OIS.bat"
+>>"%SWAP%" echo del /F /Q "%%~f0"
 echo.
 echo Applying updated installer and restarting...
 start "" /MIN "%SWAP%"
@@ -765,25 +772,121 @@ exit /b 0
 
 
 :Finish
-echo ===================================================
-echo   SUCCESS! Objects in Space is ready to play.
+echo ===============================================================
+echo   SUCCESS - Objects in Space is ready to play.
 echo.
-echo Installed patch version: %PATCH_VERSION%
-echo Files installed:         %PAYLOAD_COUNT%
-echo Game folder manifest:
-echo "%TARGET_DIR%\%GAME_MANIFEST_NAME%"
+echo   Installed patch version: %PATCH_VERSION%
+echo   Files installed:         %PAYLOAD_COUNT%
 echo.
-echo NOTE: Steam's "Verify integrity of game files" will revert this
-echo patch. Run OIS_Health_Check.bat afterwards to re-apply it.
+echo   Steam's "Verify integrity of game files" will revert this patch.
+echo   Use the "Repair Objects in Space Patch" shortcut to put it back.
 echo.
-echo If you have crashes or issues, report them here:
-echo https://steamcommunity.com/app/824070/discussions/0/573795849686060451/
-echo ===================================================
+echo   Problems? https://steamcommunity.com/app/824070/discussions/0/573795849686060451/
+echo ===============================================================
 echo.
 pause
 exit /b 0
 
+rem ------------------------------------------------------------ uninstall
+rem Backup\ holds, per filename, the FIRST copy of that file this package
+rem ever overwrote - true pre-patch state, not "last patched version" -
+rem see :CopyOne, :RestoreDelisted and :DeleteObsolete, which all write to
+rem it on first touch only. Restoring means copying everything in Backup\
+rem back over the game folder and removing the two patch marker files, so
+rem a subsequent Patch_OIS.bat run treats the folder as never patched.
+:DoUninstall
+call :DetectTarget "%TARGET_OVERRIDE%" || goto :Fail
+call :ShowInstalledVersion
+
+if not exist "%BACKUP_DIR%\*" (
+    echo [ERROR] No Backup folder found next to this script:
+    echo "%BACKUP_DIR%"
+    echo.
+    echo Nothing to restore from. Either the patch was never installed
+    echo from this copy of the package, or the Backup folder was deleted.
+    echo.
+    pause
+    exit /b 1
+)
+
+echo This will restore your pre-patch game files from:
+echo   "%BACKUP_DIR%"
+echo into:
+echo   "%TARGET_DIR%"
+echo.
+choice /C YN /M "Restore original files now?"
+if errorlevel 2 (
+    echo.
+    echo Uninstall canceled.
+    echo.
+    pause
+    exit /b 0
+)
+call :EnsureGameClosed || goto :Fail
+
+echo.
+echo Restoring pre-patch files...
+set /a RESTORE_COUNT=0
+set /a RESTORE_FAIL=0
+for %%F in ("%BACKUP_DIR%\*") do call :RestoreOne "%%~nxF"
+
+del /F /Q "%TARGET_DIR%\OIS_Update.version.txt" >nul 2>&1
+del /F /Q "%TARGET_DIR%\%GAME_MANIFEST_NAME%" >nul 2>&1
+
+echo.
+if %RESTORE_FAIL% GTR 0 (
+    echo [WARNING] %RESTORE_FAIL% file^(s^) could not be restored.
+    echo Restored %RESTORE_COUNT% file^(s^) successfully; the game folder
+    echo may now be a mix of patched and stock files. Verifying files
+    echo through Steam is the safest way to reach a clean state.
+    echo.
+) else (
+    echo Restored %RESTORE_COUNT% file^(s^). Patch markers removed.
+    echo Your game folder should now match its pre-patch state.
+    echo.
+)
+
+call :OfferFirewallRemoval
+
+echo ===============================================================
+echo   UNINSTALL COMPLETE
+echo ===============================================================
+echo.
+pause
+exit /b 0
+
+:RestoreOne
+copy /Y "%BACKUP_DIR%\%~1" "%TARGET_DIR%\%~1" >nul 2>&1
+if errorlevel 1 (
+    echo   [ERROR] failed to restore %~1
+    set /a RESTORE_FAIL+=1
+    exit /b 0
+)
+echo   restored %~1
+set /a RESTORE_COUNT+=1
+exit /b 0
+
+:OfferFirewallRemoval
+netsh advfirewall firewall show rule name="OIS_Client_Block_Inbound" >nul 2>&1
+if errorlevel 1 exit /b 0
+echo.
+choice /C YN /M "Also remove the firewall rules this patch created?"
+if errorlevel 2 exit /b 0
+set "FW=%TEMP%\ois_firewall_del_%RANDOM%.cmd"
+> "%FW%" echo @echo off
+>>"%FW%" echo netsh advfirewall firewall delete rule name="OIS_Client_Block_Inbound" ^>nul 2^>^&1
+>>"%FW%" echo netsh advfirewall firewall delete rule name="OIS_Server_Block_Inbound" ^>nul 2^>^&1
+>>"%FW%" echo exit /b 0
+echo Windows may show an Administrator permission prompt.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Start-Process -FilePath '%FW%' -Verb RunAs -Wait -WindowStyle Hidden" >nul 2>&1
+del /F /Q "%FW%" >nul 2>&1
+echo Firewall rules removed.
+exit /b 0
+
+
 :Fail
 echo.
 echo Setup did not complete.
+echo.
+pause
 exit /b 1

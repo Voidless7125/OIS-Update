@@ -1,1 +1,18 @@
+# Batch files MUST have CRLF line endings. cmd.exe label lookup
+# (call :Label / goto :Label) is unreliable in LF-only files and fails
+# with "The system cannot find the batch label specified".
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Plain text, normalised on commit, CRLF on Windows checkout.
+*.txt   text
+*.md    text
+
+# Never touch binaries.
+*.dll   binary
+*.exe   binary
+*.zip   binary
+*.png   binary
+
 OpenAL32.dll filter=lfs diff=lfs merge=lfs -text
