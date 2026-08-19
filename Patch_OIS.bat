@@ -34,6 +34,7 @@ set "TARGET_OVERRIDE="
 set "PAYLOAD_LIST="
 set "PAYLOAD_COUNT=0"
 set "UNINSTALL_MODE=0"
+set "HEALTH_CHECK_MODE=0"
 set "HAVE_CURL=0"
 where curl.exe >nul 2>&1 && set "HAVE_CURL=1"
 
@@ -68,6 +69,7 @@ if /I "%~1"=="--debug" ( set "DEBUG_MODE=1" & shift & goto :ParseArgs )
 if /I "%~1"=="/debug"  ( set "DEBUG_MODE=1" & shift & goto :ParseArgs )
 if /I "%~1"=="-uninstall"  ( set "UNINSTALL_MODE=1" & shift & goto :ParseArgs )
 if /I "%~1"=="--uninstall" ( set "UNINSTALL_MODE=1" & shift & goto :ParseArgs )
+if /I "%~1"=="-health-check" ( set "HEALTH_CHECK_MODE=1" & shift & goto :ParseArgs )
 if defined TARGET_OVERRIDE (
     echo [ERROR] Only one target game folder path can be provided.
     echo.
@@ -535,6 +537,12 @@ exit /b 0
 
 :OfferRepairShortcut
 if not exist "%SCRIPT_DIR%\OIS_Health_Check.bat" exit /b 0
+if "%HEALTH_CHECK_MODE%"=="1" (
+    echo Refreshing the repair package and shortcut...
+    call "%SCRIPT_DIR%\OIS_Health_Check.bat" -install-shortcut "%TARGET_DIR%" -quiet
+    echo.
+    exit /b 0
+)
 echo Optional: repair shortcut
 echo Steam's "Verify integrity of game files" will silently undo this patch.
 echo A shortcut lets you put it back in one click if that ever happens.
@@ -590,7 +598,14 @@ if not defined REMOTE_VERSION (
 )
 call :NormalizeVersion REMOTE_VERSION
 
-if /I "%REMOTE_VERSION%"=="%PATCH_VERSION%" (
+call :CompareVersions "%REMOTE_VERSION%" "%PATCH_VERSION%"
+if errorlevel 2 (
+    del /F /Q "%TMP_VER%" >nul 2>&1
+    echo The local package is newer ^(%PATCH_VERSION%^); no update is needed.
+    echo.
+    exit /b 0
+)
+if not errorlevel 1 (
     del /F /Q "%TMP_VER%" >nul 2>&1
     echo You already have the latest patch package ^(%PATCH_VERSION%^).
     echo.
@@ -660,6 +675,7 @@ if exist "%SCRIPT_DIR%\%~1" (
 )
 set "SYNC_DEST=%SCRIPT_DIR%\%~1"
 if /I "%~1"=="Patch_OIS.bat" set "SYNC_DEST=%SCRIPT_DIR%\Patch_OIS.bat.new"
+for %%D in ("%SYNC_DEST%") do if not exist "%%~dpD" md "%%~dpD" >nul 2>&1
 echo   downloading %~1 ...
 call :Download "%RAW_BASE%/%~1" "%SYNC_DEST%" quiet
 if errorlevel 1 (
@@ -768,6 +784,24 @@ set "%~1=%NV%"
 exit /b 0
 :nv_restore
 set "%~1=%NV_ORIG%"
+exit /b 0
+
+:CompareVersions
+set /a AV1=0, AV2=0, AV3=0, AV4=0, BV1=0, BV2=0, BV3=0, BV4=0
+for /f "tokens=1-4 delims=." %%A in ("%~1") do (
+    set /a AV1=%%A, AV2=1%%B-100, AV3=1%%C-100, AV4=1%%D-100
+)
+for /f "tokens=1-4 delims=." %%A in ("%~2") do (
+    set /a BV1=%%A, BV2=1%%B-100, BV3=1%%C-100, BV4=1%%D-100
+)
+if %AV1% GTR %BV1% exit /b 1
+if %AV1% LSS %BV1% exit /b 2
+if %AV2% GTR %BV2% exit /b 1
+if %AV2% LSS %BV2% exit /b 2
+if %AV3% GTR %BV3% exit /b 1
+if %AV3% LSS %BV3% exit /b 2
+if %AV4% GTR %BV4% exit /b 1
+if %AV4% LSS %BV4% exit /b 2
 exit /b 0
 
 :NormalizePath

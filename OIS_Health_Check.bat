@@ -159,7 +159,7 @@ echo.
 choice /C YN /M "Run the full patch installer now? It will offer an online update check and repair the install"
 if errorlevel 2 exit /b 0
 echo.
-call "%SCRIPT_DIR%\Patch_OIS.bat" "%TARGET_DIR%"
+call "%SCRIPT_DIR%\Patch_OIS.bat" -health-check "%TARGET_DIR%"
 if errorlevel 1 (
     echo.
     echo [WARNING] The update or repair did not complete.
@@ -344,7 +344,9 @@ if not exist "%USER_ROOT%" (
     pause
     exit /b 1
 )
+if not exist "%USER_ROOT%\Original" md "%USER_ROOT%\Original" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\*.dll" "%USER_ROOT%\" >nul 2>&1
+if exist "%SCRIPT_DIR%\Original\*.dll" copy /Y "%SCRIPT_DIR%\Original\*.dll" "%USER_ROOT%\Original\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\manifest.txt" "%USER_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\VERSION.txt" "%USER_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\Patch_OIS.bat" "%USER_ROOT%\" >nul 2>&1
@@ -424,7 +426,9 @@ if not defined TARGET_DIR (
 
 echo Copying the patch package to "%INSTALL_ROOT%" ...
 if not exist "%INSTALL_ROOT%" md "%INSTALL_ROOT%" >nul 2>&1
+if not exist "%INSTALL_ROOT%\Original" md "%INSTALL_ROOT%\Original" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\*.dll" "%INSTALL_ROOT%\" >nul 2>&1
+if exist "%SCRIPT_DIR%\Original\*.dll" copy /Y "%SCRIPT_DIR%\Original\*.dll" "%INSTALL_ROOT%\Original\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\manifest.txt" "%INSTALL_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\VERSION.txt" "%INSTALL_ROOT%\" >nul 2>&1
 copy /Y "%SCRIPT_DIR%\Patch_OIS.bat" "%INSTALL_ROOT%\" >nul 2>&1

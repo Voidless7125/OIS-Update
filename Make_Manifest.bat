@@ -53,6 +53,7 @@ set /a FAIL_COUNT=0
 )
 
 for %%F in ("%SCRIPT_DIR%\*.dll") do call :Emit game "%%~nxF"
+for %%F in ("%SCRIPT_DIR%\Original\*.dll") do if exist "%%~fF" call :Emit tool "Original\%%~nxF"
 for %%F in (%TOOL_FILES%) do if exist "%SCRIPT_DIR%\%%~F" call :Emit tool "%%~F"
 
 if %GAME_COUNT% EQU 0 (
