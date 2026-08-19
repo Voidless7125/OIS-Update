@@ -1,6 +1,6 @@
 # OIS Community Patch manifest
-# Version=2026.08.18.3
-# Generated=Tue 08/18/2026 19:51:33.18
+# Version=2026.08.18.4
+# Generated=Tue 08/18/2026 20:01:01.35
 # Format: <scope> <sha256> <filename>
 #   game = copied into the game folder
 #   tool = package only (scripts and docs)
@@ -32,9 +32,9 @@ game 9c8a80e1d5249784b40cf9a9a5ab485766be37a3b22ceb729a6c11358d2f1df3 OpenAL32.d
 game 1c2fcfa7632b6025829e3539142f1b7ebdbc5bb44d4fd6cc0f42f83715d2eb9f sqlite3.dll
 game 18009be7ec710f5ecb18264ec3ec056ba4e7f3da4a894d9a6ac359da54f626b8 websockets.dll
 game eadacd475157bc9c38a52804876b09fd473861ce400a20b56ce840c53529c3e0 zlib1.dll
-tool f825579b0a4d0115972f2734152f2fe958c47485a7885651e8607627341dcfcf Patch_OIS.bat
-tool d2a55ff06cb9d3969547a2372a497d137c135ed2fd8d490b8f97795e550f1fee OIS_Health_Check.bat
+tool 05707d39cb5b39be27bb81cda9918bb7ad5fb4b3233653f8b93cf15ecca5d4d6 Patch_OIS.bat
+tool b6e23564bb89aebae97fe05067f3d894dceaef096bcc4940cd38f9a026988983 OIS_Health_Check.bat
 tool ff35ad08d2f233f641d1571c1009f1ca48c4016a60f9dbdb7ec37a73f9a7b16b Make_Manifest.bat
-tool fe52f5666207e71b7fa077f29e88be5747721373df5a91e128ce8b0ef9ecb230 VERSION.txt
+tool eba838bcebc3fdd64a17a7e3d2f999aed22d90c78a87f6152daacc775e509f51 VERSION.txt
 tool 455485059b70ba0cb25cae81ab56308059e5e2c711ccc9bfee4f9f0620125496 SECURITY.md
 tool 209b2c085fe5b48377e71252eca67a602c46a837961577ac1549cedca11309c5 README.md

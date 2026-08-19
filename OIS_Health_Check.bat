@@ -327,6 +327,14 @@ rem which they will.
 :InstallShortcut
 if not defined TARGET_DIR call :FindTarget
 
+echo This creates a shortcut and keeps a copy of the patch package for it.
+echo Retained package location:
+echo   "%USER_ROOT%"
+echo The shortcut uses this folder to repair the install and offer future
+echo patch updates after Steam replaces the patched files.
+echo This folder can be deleted manually later, but doing so removes the
+echo local repair and update copy.
+echo.
 echo Copying the patch package to:
 echo   "%USER_ROOT%"
 if not exist "%USER_ROOT%" md "%USER_ROOT%" >nul 2>&1
@@ -361,6 +369,8 @@ exit /b 1
 :ShortcutOk
 echo.
 echo Created "Repair Objects in Space Patch" on your Desktop and Start Menu.
+echo The repair and update package is stored at:
+echo   "%USER_ROOT%"
 echo.
 echo If Steam ever verifies your game files and the patch stops applying,
 echo click that shortcut. It re-checks every file and puts back anything

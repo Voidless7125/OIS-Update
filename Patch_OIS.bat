@@ -539,11 +539,20 @@ echo Optional: repair shortcut
 echo Steam's "Verify integrity of game files" will silently undo this patch.
 echo A shortcut lets you put it back in one click if that ever happens.
 echo.
+echo Choosing Yes keeps a copy of the patch package here:
+echo   "%LOCALAPPDATA%\OIS-Update"
+echo The shortcut uses that folder to repair the install and offer future
+echo patch updates, even after you delete the folder you downloaded.
+echo Choosing No keeps no repair copy. If Steam later reverts the patch,
+echo you will need to download and extract the patch package again manually.
+echo.
 choice /C YN /M "Create a 'Repair Objects in Space Patch' shortcut?"
 if errorlevel 2 (
     echo.
-    echo Skipped. You can create it later with:
+    echo Skipped. No retained repair/update folder was created.
+    echo You can create it later, while this package is still available, with:
     echo   OIS_Health_Check.bat -install-shortcut
+    echo Otherwise download and extract the patch package again before repairing.
     echo.
     exit /b 0
 )
