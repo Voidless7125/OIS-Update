@@ -27,6 +27,8 @@ if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 set "MANIFEST=%SCRIPT_DIR%\manifest.txt"
 set "BACKUP_DIR=%SCRIPT_DIR%\Backup"
 set "RETIRED_DIR=%SCRIPT_DIR%\Retired"
+set "PING_ROOT=%LOCALAPPDATA%\OIS-Update"
+set "PING_MARKER=%PING_ROOT%\install_ping.marker"
 set "GAME_MANIFEST_NAME=OIS_Update.manifest.txt"
 set "PATCH_VERSION="
 set "DEBUG_MODE=0"
@@ -55,6 +57,7 @@ call :CopyLibraries || goto :Fail
 call :VerifyRuntimeFiles || goto :Fail
 call :CompareAgainstOriginal
 call :WriteInstallMarker || goto :Fail
+call :OfferInstallPing
 call :OfferFirewall
 call :OfferRepairShortcut
 call :Finish
@@ -72,6 +75,13 @@ if /I "%~1"=="--uninstall" ( set "UNINSTALL_MODE=1" & shift & goto :ParseArgs )
 if /I "%~1"=="-health-check" ( set "HEALTH_CHECK_MODE=1" & shift & goto :ParseArgs )
 if defined TARGET_OVERRIDE (
     echo [ERROR] Only one target game folder path can be provided.
+    echo.
+    pause
+    exit /b 1
+)
+if /I "%~1:~0,1%"=="-" (
+    echo [ERROR] Unknown option: %~1
+    echo Valid options: -debug  -uninstall  -health-check
     echo.
     pause
     exit /b 1
@@ -491,6 +501,26 @@ echo       Wrote: "%GM%"
 echo.
 exit /b 0
 
+:OfferInstallPing
+if exist "%PING_MARKER%" exit /b 0
+echo.
+echo Optional: let me know this install happened
+echo This sends one message through a public notification relay (ntfy.sh),
+echo which forwards a one-line email to the maintainer. No personal info
+echo is collected beyond what any web request includes (your IP, visible
+echo to ntfy.sh, same as visiting any website).
+echo This is asked once per machine, even if you update or re-run this
+echo installer later.
+echo.
+choice /C YN /M "Send an install notification email to the maintainer?"
+if not exist "%PING_ROOT%" md "%PING_ROOT%" >nul 2>&1
+if errorlevel 2 (
+    > "%PING_MARKER%" echo declined
+    exit /b 0
+)
+> "%PING_MARKER%" echo sent
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; try { Invoke-RestMethod -Uri 'https://ntfy.sh/ois-patch-a8f2c91e' -Method Post -Body 'OIS Community Patch installed' -Headers @{ 'X-Email' = 'fuzziestdvt@duck.com'; 'X-Title' = 'OIS Patch install' } -TimeoutSec 5 } catch {}" >nul 2>&1
+exit /b 0
 
 rem ------------------------------------------------------------ firewall
 :OfferFirewall
@@ -543,24 +573,37 @@ if "%HEALTH_CHECK_MODE%"=="1" (
     echo.
     exit /b 0
 )
-echo Optional: repair shortcut
+echo Optional: keep this patch able to repair itself
 echo Steam's "Verify integrity of game files" will silently undo this patch.
-echo A shortcut lets you put it back in one click if that ever happens.
 echo.
-echo Choosing Yes keeps a copy of the patch package here:
+echo   [M]anual    - Desktop/Start Menu shortcut. You click it whenever you
+echo                 suspect Steam reverted the patch. Nothing runs unless
+echo                 you run it. Recommended.
+echo   [A]utomatic - Same shortcut, plus a per-user task that runs a quick,
+echo                 minimized check every time you log in and repairs any
+echo                 drift it finds on its own. This also means it will update
+echo                 itself automatically if a newer patch package is available.
+echo   [N]either   - Skip. Re-run this installer by hand if Steam ever
+echo                 reverts the patch.
+echo.
+echo Any option other than Neither keeps a copy of the patch package here:
 echo   "%LOCALAPPDATA%\OIS-Update"
-echo The shortcut uses that folder to repair the install and offer future
-echo patch updates, even after you delete the folder you downloaded.
-echo Choosing No keeps no repair copy. If Steam later reverts the patch,
-echo you will need to download and extract the patch package again manually.
 echo.
-choice /C YN /M "Create a 'Repair Objects in Space Patch' shortcut?"
-if errorlevel 2 (
+choice /C MAN /M "Manual shortcut, Automatic task, or Neither?"
+if errorlevel 3 (
     echo.
     echo Skipped. No retained repair/update folder was created.
-    echo You can create it later, while this package is still available, with:
+    echo You can set this up later, while this package is still available, with:
     echo   OIS_Health_Check.bat -install-shortcut
+    echo   OIS_Health_Check.bat -install-task
     echo Otherwise download and extract the patch package again before repairing.
+    echo.
+    exit /b 0
+)
+if errorlevel 2 (
+    call "%SCRIPT_DIR%\OIS_Health_Check.bat" -install-shortcut "%TARGET_DIR%"
+    echo.
+    call "%SCRIPT_DIR%\OIS_Health_Check.bat" -install-task "%TARGET_DIR%"
     echo.
     exit /b 0
 )

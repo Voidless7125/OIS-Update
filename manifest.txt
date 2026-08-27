@@ -1,6 +1,6 @@
 # OIS Community Patch manifest
-# Version=2026.08.18.5
-# Generated=Tue 08/18/2026 20:31:16.23
+# Version=2026.08.26.1
+# Generated=Wed 08/26/2026 20:33:16.88
 # Format: <scope> <sha256> <filename>
 #   game = copied into the game folder
 #   tool = package only (scripts and docs)
@@ -49,9 +49,9 @@ tool 34057639b01413314a1b67c56c5d81e2aaa965f4eef1b9e11f2aa2261a628a0b Original\s
 tool dc204ea6ad73ae127a2f6977055f861dc9c850a3c14d66e0810b8650cc1340a0 Original\steam_api.dll
 tool fa639c00cb6659ae007bb28ff6b8d206212fe76f7a57c5bcd92886200913346c Original\websockets.dll
 tool 91ec6085e862e1eedc254bf88efecd4fa67f486216ab3b1473915d15462e71bb Original\zlib1.dll
-tool 1ddf459b0b54ba4b44039f5df19ab283a8bba494aaac4c6e6ef79e0891cb80b8 Patch_OIS.bat
-tool a424cc43545f59943d61117cc71f9586bec206804c60f5f7dc4bff57f5ad11fb OIS_Health_Check.bat
+tool e57d563cfac049d1df512026c90b8784c22f7e60331071b28de3fa2d326763f1 Patch_OIS.bat
+tool 59cfa3b4a919296aa3880fc407e8a2d9aada2424c23f00ecf0ccf2486cae1fa5 OIS_Health_Check.bat
 tool 7602df256d31fe14b8946ab3db0eea6eeec1179dfe2adde0251f6f2dec030a0a Make_Manifest.bat
-tool a7ef1e491d33442bc6616f2e8ec67f69be93930bcb8ed5c4bd85d8d761362cfc VERSION.txt
+tool f00cd019f36d18512f097742821942027f7f2452bc3dcd53edb36d32859f554b VERSION.txt
 tool 455485059b70ba0cb25cae81ab56308059e5e2c711ccc9bfee4f9f0620125496 SECURITY.md
 tool 209b2c085fe5b48377e71252eca67a602c46a837961577ac1549cedca11309c5 README.md

@@ -16,7 +16,8 @@ rem                       Desktop and Start Menu. No admin required.
 rem    -remove-shortcut   delete those shortcuts
 rem
 rem  Advanced (not the default, see notes at :InstallTask):
-rem    -install-task      register a SYSTEM scheduled task at logon
+rem    -install-task      register a per-user scheduled task at logon that
+rem                       runs minimized and closes itself when done
 rem    -remove-task       unregister it
 rem
 rem  Internal:
@@ -38,11 +39,11 @@ set "SELF=%~f0"
 
 set "TASK_NAME=OIS Community Patch Integrity"
 set "USER_ROOT=%LOCALAPPDATA%\OIS-Update"
-set "INSTALL_ROOT=%ProgramData%\OIS-Update"
-set "LOG_FILE=%INSTALL_ROOT%\health.log"
+set "LOG_FILE=%USER_ROOT%\health.log"
 set "GAME_MANIFEST_NAME=OIS_Update.manifest.txt"
 set "SHORTCUT_NAME=Repair Objects in Space Patch.lnk"
 set "TARGET_HINT=%TEMP%\ois_repair_target.txt"
+set "TASK_LAUNCHER=%USER_ROOT%\ois_task_launcher.vbs"
 
 set "DO_REPAIR=0"
 set "QUIET=0"
@@ -52,9 +53,15 @@ set "TARGET_DIR="
 
 call :ParseArgs %*
 
+if "%QUIET%"=="1" (
+    title OIS Patch - checking install
+    echo(OIS Community Patch: quick integrity check...
+)
+
 if /I "%MODE%"=="install-shortcut" goto :InstallShortcut
 if /I "%MODE%"=="remove-shortcut"  goto :RemoveShortcut
-if /I "%MODE%"=="install-task"     goto :InstallTask
+if /I "%MODE%"=="install-task"       goto :InstallTask
+if /I "%MODE%"=="install-task-daily" goto :InstallTask
 if /I "%MODE%"=="remove-task"      goto :RemoveTask
 
 if not defined TARGET_DIR call :FindTarget
@@ -183,6 +190,7 @@ if /I "%~1"=="-elevated"         ( set "ELEVATED=1"             & shift & goto :
 if /I "%~1"=="-install-shortcut" ( set "MODE=install-shortcut"  & shift & goto :ParseArgs )
 if /I "%~1"=="-remove-shortcut"  ( set "MODE=remove-shortcut"   & shift & goto :ParseArgs )
 if /I "%~1"=="-install-task"     ( set "MODE=install-task"      & shift & goto :ParseArgs )
+if /I "%~1"=="-install-task-daily" ( set "MODE=install-task-daily"  & shift & goto :ParseArgs )
 if /I "%~1"=="-remove-task"      ( set "MODE=remove-task"       & shift & goto :ParseArgs )
 set "TARGET_DIR=%~1"
 if defined TARGET_DIR if "%TARGET_DIR:~-1%"=="\" set "TARGET_DIR=%TARGET_DIR:~0,-1%"
@@ -257,16 +265,13 @@ rem on a second drive), the script only asks when it actually cannot write.
 if "%DO_REPAIR%"=="0" exit /b 0
 if "%QUIET%"=="1" exit /b 0
 if "%ELEVATED%"=="1" exit /b 0
-break > "%TARGET_DIR%\ois_write_test.tmp" 2>nul
-if exist "%TARGET_DIR%\ois_write_test.tmp" (
-    del /F /Q "%TARGET_DIR%\ois_write_test.tmp" >nul 2>&1
-    exit /b 0
-)
+call :TestWritable "%TARGET_DIR%"
+if not errorlevel 1 exit /b 0
 echo.
 echo The game folder is not writable by your account.
 echo Windows will ask for Administrator permission to repair it.
 echo.
-> "%TARGET_HINT%" echo %TARGET_DIR%
+call :WriteTargetHint
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Start-Process -FilePath '%SELF%' -ArgumentList '-repair','-elevated' -Verb RunAs" >nul 2>&1
 exit
 
@@ -395,26 +400,40 @@ echo.
 pause
 exit /b 0
 
+rem --------------------------------------------------------- target hint
+rem This is a temporary file that stores the game folder path when the script
+rem relaunches itself for elevated permission. It is deleted after the elevated run completes.
+:WriteTargetHint
+> "%TARGET_HINT%" echo %TARGET_DIR%
+exit /b 0
+
+rem --------------------------------------------------------- write test
+rem Just a helper function for InstallTask for testing whether the current account can write to the game folder. 
+rem If it cannot, the scheduled task will not be able to repair anything, and it will silently log "unrepaired" 
+rem without prompting for permission. The Desktop/Start Menu shortcut does not have this problem, since it 
+rem can prompt for permission when needed. The automatic task is not recommended for a folder that cannot be 
+rem written to by the current account.
+:TestWritable
+break > "%~1\ois_write_test.tmp" 2>nul
+if exist "%~1\ois_write_test.tmp" (
+    del /F /Q "%~1\ois_write_test.tmp" >nul 2>&1
+    exit /b 0
+)
+exit /b 1
 
 rem ------------------------------------------------- advanced: scheduled
-rem Not the default, deliberately. A SYSTEM-privileged task that silently
-rem rewrites DLLs in a game folder is structurally identical to a
-rem persistence mechanism, and it solves a problem that fires roughly once
-rem per user per year. It also triggers on logon, while Steam verification
-rem happens mid-session, so the shortcut usually gets there first anyway.
-rem Offered for people who want it, never installed without being asked.
+rem Registers a task under the CURRENT user only - no admin rights, no
+rem SYSTEM privilege, nothing this account couldn't already do by hand.
+rem It runs minimized at logon, checks the manifest, repairs any drift,
+rem and closes itself; nothing lingers in the background afterward.
+rem Still opt-in, not the default: it solves a problem (Steam's "Verify
+rem integrity" silently reverting the patch) that fires roughly once per
+rem user per year, and the Desktop/Start Menu shortcut from
+rem -install-shortcut covers the same need on demand without anything
+rem running unattended. Patch_OIS.bat's installer offers a choice between
+rem the manual shortcut and this automatic task; -install-task also
+rem remains directly available for anyone who skipped that prompt.
 :InstallTask
-net session >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] Administrator rights are required to create a scheduled task.
-    echo Right-click this file and choose "Run as administrator".
-    echo.
-    echo Most people should use -install-shortcut instead. It needs no
-    echo admin rights and covers the same problem.
-    echo.
-    pause
-    exit /b 1
-)
 if not defined TARGET_DIR call :FindTarget
 if not defined TARGET_DIR (
     echo [ERROR] Could not locate the game folder. Pass it as an argument:
@@ -424,54 +443,142 @@ if not defined TARGET_DIR (
     exit /b 1
 )
 
-echo Copying the patch package to "%INSTALL_ROOT%" ...
-if not exist "%INSTALL_ROOT%" md "%INSTALL_ROOT%" >nul 2>&1
-if not exist "%INSTALL_ROOT%\Original" md "%INSTALL_ROOT%\Original" >nul 2>&1
-copy /Y "%SCRIPT_DIR%\*.dll" "%INSTALL_ROOT%\" >nul 2>&1
-if exist "%SCRIPT_DIR%\Original\*.dll" copy /Y "%SCRIPT_DIR%\Original\*.dll" "%INSTALL_ROOT%\Original\" >nul 2>&1
-copy /Y "%SCRIPT_DIR%\manifest.txt" "%INSTALL_ROOT%\" >nul 2>&1
-copy /Y "%SCRIPT_DIR%\VERSION.txt" "%INSTALL_ROOT%\" >nul 2>&1
-copy /Y "%SCRIPT_DIR%\Patch_OIS.bat" "%INSTALL_ROOT%\" >nul 2>&1
-copy /Y "%SCRIPT_DIR%\OIS_Health_Check.bat" "%INSTALL_ROOT%\" >nul 2>&1
+call :TestWritable "%TARGET_DIR%"
+if not errorlevel 1 goto :TaskFolderWritable
 
-set "TASK_CMD=%INSTALL_ROOT%\OIS_Health_Check.bat"
-schtasks /Create /TN "%TASK_NAME%" /TR "\"%TASK_CMD%\" -repair -quiet \"%TARGET_DIR%\"" /SC ONLOGON /RU SYSTEM /RL HIGHEST /F >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] Could not create the scheduled task.
+echo.
+echo [WARNING] This account cannot write to the game folder:
+echo   "%TARGET_DIR%"
+echo.
+echo The automatic task runs -quiet, which never prompts for the
+echo Administrator permission a repair might need here. If Steam
+echo reverts a file, the task will detect it and log "unrepaired"
+echo silently - it will NOT fix it and will NOT tell you.
+echo.
+echo The Desktop/Start Menu shortcut ^(-install-shortcut^) doesn't have
+echo this problem, since it can prompt for permission when needed.
+echo The automatic task is NOT recommended for this folder.
+echo.
+choice /C YN /M "Install the automatic task anyway?"
+if not errorlevel 2 goto :TaskFolderWritable
+echo.
+echo Skipped. Use OIS_Health_Check.bat -install-shortcut instead.
+echo.
+pause
+exit /b 0
+
+:TaskFolderWritable
+echo Copying the patch package to "%USER_ROOT%" ...
+if not exist "%USER_ROOT%" md "%USER_ROOT%" >nul 2>&1
+if not exist "%USER_ROOT%\Original" md "%USER_ROOT%\Original" >nul 2>&1
+copy /Y "%SCRIPT_DIR%\*.dll" "%USER_ROOT%\" >nul 2>&1
+if exist "%SCRIPT_DIR%\Original\*.dll" copy /Y "%SCRIPT_DIR%\Original\*.dll" "%USER_ROOT%\Original\" >nul 2>&1
+copy /Y "%SCRIPT_DIR%\manifest.txt" "%USER_ROOT%\" >nul 2>&1
+copy /Y "%SCRIPT_DIR%\VERSION.txt" "%USER_ROOT%\" >nul 2>&1
+copy /Y "%SCRIPT_DIR%\Patch_OIS.bat" "%USER_ROOT%\" >nul 2>&1
+copy /Y "%SCRIPT_DIR%\OIS_Health_Check.bat" "%USER_ROOT%\" >nul 2>&1
+
+> "%TASK_LAUNCHER%" echo Set objShell = CreateObject("WScript.Shell")
+>>"%TASK_LAUNCHER%" echo objShell.Run Chr(34) ^& WScript.Arguments(0) ^& Chr(34) ^& " -repair -quiet " ^& Chr(34) ^& WScript.Arguments(1) ^& Chr(34), 7, False
+if not exist "%TASK_LAUNCHER%" (
+    echo [ERROR] Could not write the task launcher script.
     echo.
     pause
     exit /b 1
 )
+
+set "TASK_CMD=%USER_ROOT%\OIS_Health_Check.bat"
+set "TASK_ERR=%TEMP%\ois_schtasks_err.txt"
+schtasks /Create /TN "%TASK_NAME%" /TR "wscript.exe //B \"%TASK_LAUNCHER%\" \"%TASK_CMD%\" \"%TARGET_DIR%\"" /SC ONLOGON /F >nul 2>"%TASK_ERR%"
+if not errorlevel 1 goto :TaskCreated
+
+findstr /I /C:"Access is denied" "%TASK_ERR%" >nul
+if errorlevel 1 goto :TaskCreateFailed
+if "%ELEVATED%"=="1" goto :TaskCreateFailed
+
+del /F /Q "%TASK_ERR%" >nul 2>&1
+echo.
+echo Windows requires one Administrator prompt to register a
+echo scheduled task, even though the task itself will only ever
+echo run as your own account afterward. This is needed once, at
+echo setup - not every time the task runs.
+echo.
+call :WriteTargetHint
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Start-Process -FilePath '%SELF%' -ArgumentList '-install-task','-elevated' -Verb RunAs -Wait" >nul 2>&1
+schtasks /Query /TN "%TASK_NAME%" >nul 2>&1
+if errorlevel 1 goto :TaskCreateStillFailed
+goto :TaskCreated
+
+:TaskCreateStillFailed
+echo [ERROR] The task still was not created. The Administrator
+echo prompt may have been canceled or blocked.
+echo.
+pause
+exit /b 1
+
+:TaskCreateFailed
+echo [ERROR] Could not create the scheduled task. Details:
+if exist "%TASK_ERR%" type "%TASK_ERR%"
+del /F /Q "%TASK_ERR%" >nul 2>&1
+echo.
+pause
+exit /b 1
+
+:TaskCreated
+del /F /Q "%TASK_ERR%" >nul 2>&1
 echo.
 echo Scheduled task created: "%TASK_NAME%"
-echo   runs   : at every logon, as SYSTEM, no window, offline only
-echo   package: "%INSTALL_ROOT%"
+echo   runs   : at every logon, as you, minimized, closes itself
+echo   package: "%USER_ROOT%"
 echo   log    : "%LOG_FILE%"
 echo.
-echo To also run it daily at noon:
-echo   schtasks /Create /TN "%TASK_NAME% Daily" /TR "\"%TASK_CMD%\" -repair -quiet" /SC DAILY /ST 12:00 /RU SYSTEM /RL HIGHEST /F
+echo Also run this check once a day at noon, in addition to at logon?
+choice /C YN /M "Add a daily check"
+if errorlevel 2 goto :TaskAllDone
+
+set "TASK_ERR2=%TEMP%\ois_schtasks_daily_err.txt"
+schtasks /Create /TN "%TASK_NAME% Daily" /TR "wscript.exe //B \"%TASK_LAUNCHER%\" \"%TASK_CMD%\" \"%TARGET_DIR%\"" /SC DAILY /ST 12:00 /F >nul 2>"%TASK_ERR2%"
+if not errorlevel 1 goto :DailyTaskCreated
+
+findstr /I /C:"Access is denied" "%TASK_ERR2%" >nul
+if errorlevel 1 goto :DailyTaskFailed
+if "%ELEVATED%"=="1" goto :DailyTaskFailed
+
+del /F /Q "%TASK_ERR2%" >nul 2>&1
 echo.
-echo To remove it:  OIS_Health_Check.bat -remove-task
+echo One more Administrator prompt is needed for the daily task.
+echo.
+call :WriteTargetHint
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Start-Process -FilePath '%SELF%' -ArgumentList '-install-task-daily','-elevated' -Verb RunAs -Wait" >nul 2>&1
+schtasks /Query /TN "%TASK_NAME% Daily" >nul 2>&1
+if errorlevel 1 goto :DailyTaskFailedSilent
+goto :DailyTaskCreated
+
+:DailyTaskFailedSilent
+echo [WARNING] The daily task was not created. The Administrator prompt
+echo may have been canceled or blocked. The logon task is still active.
+echo.
+goto :TaskAllDone
+
+:DailyTaskFailed
+echo [WARNING] Could not create the daily task. Details:
+if exist "%TASK_ERR2%" type "%TASK_ERR2%"
+del /F /Q "%TASK_ERR2%" >nul 2>&1
+echo The logon task is still active regardless.
+echo.
+goto :TaskAllDone
+
+:DailyTaskCreated
+del /F /Q "%TASK_ERR2%" >nul 2>&1
+echo.
+echo Daily check added: runs at noon in addition to at logon.
+echo.
+
+:TaskAllDone
+echo To remove either task:  OIS_Health_Check.bat -remove-task
 echo.
 pause
 exit /b 0
-
-
-:RemoveTask
-net session >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] Administrator rights are required to remove a scheduled task.
-    echo.
-    pause
-    exit /b 1
-)
-schtasks /Delete /TN "%TASK_NAME%" /F >nul 2>&1
-schtasks /Delete /TN "%TASK_NAME% Daily" /F >nul 2>&1
-echo Scheduled task removed. The copy under "%INSTALL_ROOT%" was left in place.
-echo.
-pause
-exit /b 0
-
 
 rem ------------------------------------------------------------- helpers
 :HashFile
@@ -490,6 +597,6 @@ echo(%~1
 exit /b 0
 
 :Log
-if not exist "%INSTALL_ROOT%" md "%INSTALL_ROOT%" >nul 2>&1
+if not exist "%USER_ROOT%" md "%USER_ROOT%" >nul 2>&1
 >> "%LOG_FILE%" echo %DATE% %TIME%  %~1
 exit /b 0

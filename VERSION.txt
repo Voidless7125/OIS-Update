@@ -1,4 +1,4 @@
-2026.08.18.5
+2026.08.26.1
 # ---------------------------------------------------------------------
 #  Line 1 above is the version string. It is parsed by Patch_OIS.bat and
 #  compared against the copy on GitHub, so it must stay on its own on the
@@ -13,19 +13,15 @@
 # ---------------------------------------------------------------------
 ===============================================================
     OBJECTS IN SPACE          C O M M U N I T Y   P A T C H
-    Release 2026.08.18.5                     18 August 2026
+    Release 2026.08.26.1                     26 August 2026
 ===============================================================
     Modernises the 2018 dependency chain shipped with OIS 1.0.8.
     28 libraries, verified by SHA256, installed in one pass.
 ---------------------------------------------------------------
+  NEW:
+      + New automatic service maker for auto updates
   UPDATED:
-    +   Health Check refreshes the repair package automatically (.5 patch)
-    +   Original baseline files are retained for installer comparisons (.5 patch)
-    ~   libmpg123 is now at 1.33.7 rather than 1.33.6 (.2 patch)
-    +   Health Check now offers opt-in online update checks (.3 patch)
-    +   Full installer repair restores the complete patched install (.3 patch)
-    +   Repair shortcuts now include the installer for offline recovery (.3 patch)
-    +   Shortcut setup explains the retained package location and purpose (.4 patch)
+      + Maintenance and bug fixes 
 ---------------------------------------------------------------
   LIBRARY VERSIONS IN THIS RELEASE
     OpenSSL   1.1.1zh      cURL       8.21.0     SQLite  3.53.4

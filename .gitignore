@@ -28,3 +28,5 @@ bin/
 *.exe~
 *.bak
 Backup/
+library_sources.txt
+Check_Library_Updates.bat
