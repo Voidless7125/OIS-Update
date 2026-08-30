@@ -1,35 +1,37 @@
 # Objects in Space - Modernized 32-Bit Dependencies & Community Patch
 
-A community-maintained package of modernized 32-bit runtime dependencies and automated deployment scripts for Objects in Space. This package addresses compatibility issues, cleans up redundant files, and introduces an optional Windows Firewall configuration to protect legacy network modules.
+A community-maintained package of modernized 32-bit runtime dependencies and automated deployment scripts for Objects in Space. This package addresses outdated and vulnerable libraries, trims a set of dependency files the game never actually needed, and offers an optional Windows Firewall configuration to reduce the exposure of one legacy networking component that can't be fully replaced without the game's source.
 
 ---
 
 ## What This Patch Does
 
-* Updates core dependencies with stable 32-bit binary builds of essential runtime DLLs like OpenAL32.dll, glew32.dll, and fmod.dll.
-* Automatically removes redundant or conflicting files, including legacy OpenSSL v3 and iconv libraries.
-* Includes an opt-in automated script to restrict unnecessary inbound internet exposure for legacy networking components.
+* Updates core dependencies with modern, patched 32-bit builds — cURL, zlib, SQLite, libtiff, libvorbis, libmpg123, FMOD, OpenAL, and libwebsockets.
+* Rebuilds `libcurl.dll` from source against Windows' native TLS (Schannel) instead of bundling a third-party OpenSSL for it, which removes ten supporting files the previous packaging approach pulled in unnecessarily.
+* Verifies every installed file against a SHA256 manifest before and after copying.
+* Includes an opt-in script to restrict inbound network exposure for the one component (`libwebsockets`) that can't be fully modernized without recompiling the game from source.
+
+Full technical detail, including exactly which files changed and why, is in [SECURITY.md](SECURITY.md).
 
 ---
 
 ## Installation Instructions
 
-1. Download the latest release or download this repository as a zip archive.
+1. Download the latest release, or download this repository as a zip archive.
 2. Extract the entire archive to a folder on your computer such as your Desktop. Do not run the script directly from inside the compressed zip file.
 3. Double-click **Patch_OIS.bat**.
 4. Follow the on-screen prompts:
    * The script will locate your default Steam installation of Objects in Space.
-   * It will copy the required DLLs and clean up old dependencies.
+   * It will copy the required DLLs and remove files that are no longer needed (see [SECURITY.md](SECURITY.md) for exactly which ones and why — some are restored from a backup if Steam reverts them, others are removed outright).
    * You will be given a prompt to apply recommended Windows Firewall rules for added security.
 
 ---
 
-## Antivirus Notes
+## Antivirus & Windows Security Notes
 
-When downloading or running community-compiled 32-bit C++ binaries, you may occasionally run into antivirus false positives:
-
-* **libwinpthread-1.dll:** Some security engines flag this standard MinGW POSIX threading library due to generic signature heuristics. It is entirely safe and required for modern threading wrappers. If your scanner blocks it, you can add an exclusion or verify the checksums.
-* **Firewall Implementation:** The batch script uses a native PowerShell process to configure the firewall without dropping temporary executable files on your system.
+* This package no longer ships any MinGW-runtime files (`libwinpthread-1.dll`, `libgcc_s_dw2-1.dll`, and others) — those were artifacts of an earlier build approach and have been removed entirely. Some Windows 11 installs with Smart App Control enabled would silently block those unsigned files, surfacing as a "Bad Image" or "part of this app has been blocked" error; that failure mode should no longer occur with this release.
+* If your security software flags anything else in this package, please check the SHA256 against `manifest.txt` before assuming it's a false positive, and report it on the Steam discussion thread linked below either way.
+* **Firewall Implementation:** the batch script uses a native PowerShell process to configure firewall rules without dropping any temporary executable files on your system.
 
 ---
 

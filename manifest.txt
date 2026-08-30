@@ -1,6 +1,6 @@
 # OIS Community Patch manifest
-# Version=2026.08.30.1
-# Generated=Sun 08/30/2026 18:12:48.75
+# Version=2026.08.30.2
+# Generated=Sun 08/30/2026 18:20:42.73
 # Format: <scope> <sha256> <filename>
 #   game = copied into the game folder
 #   tool = package only (scripts and docs)
@@ -39,6 +39,6 @@ tool 91ec6085e862e1eedc254bf88efecd4fa67f486216ab3b1473915d15462e71bb Original\z
 tool e57d563cfac049d1df512026c90b8784c22f7e60331071b28de3fa2d326763f1 Patch_OIS.bat
 tool 59cfa3b4a919296aa3880fc407e8a2d9aada2424c23f00ecf0ccf2486cae1fa5 OIS_Health_Check.bat
 tool 7602df256d31fe14b8946ab3db0eea6eeec1179dfe2adde0251f6f2dec030a0a Make_Manifest.bat
-tool 25b6e5bfa3f6e474e6b41d91d2a33ca0b10f1a6ffe316a6af178ceba49a92bf4 VERSION.txt
-tool 455485059b70ba0cb25cae81ab56308059e5e2c711ccc9bfee4f9f0620125496 SECURITY.md
-tool 209b2c085fe5b48377e71252eca67a602c46a837961577ac1549cedca11309c5 README.md
+tool 806a5b4d8fa29843aa3bde42dccc91a4956d9cafde6f690397c885925bdf83b8 VERSION.txt
+tool 42f8cab8700d27b1607284c17c36dbea0bb478ff619b78aa79c4bbcf25d1eb85 SECURITY.md
+tool 42d5b06cd81af6da15d6dd1dae09f84914c27a8d995f861b07cc17cf3e75188f README.md
