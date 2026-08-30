@@ -30,3 +30,4 @@ bin/
 Backup/
 library_sources.txt
 Check_Library_Updates.bat
+OIS_Update.version.txt
