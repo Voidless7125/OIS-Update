@@ -1,3 +1,7 @@
+# ARCHIVING
+
+I will be working with https://github.com/l33way/ois-patcher to implement this into that repo. You can still use this repo, but no further updates will be done to this repo. Happy flying everyone!
+
 # Objects in Space - Modernized 32-Bit Dependencies & Community Patch
 
 A community-maintained package of modernized 32-bit runtime dependencies and automated deployment scripts for Objects in Space. This package addresses outdated and vulnerable libraries, trims a set of dependency files the game never actually needed, and offers an optional Windows Firewall configuration to reduce the exposure of one legacy networking component that can't be fully replaced without the game's source.
